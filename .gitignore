@@ -1,0 +1,14 @@
+# Project place file
+/memory-heist.rbxlx
+
+# Roblox Studio lock files
+/*.rbxlx.lock
+/*.rbxl.lock
+
+sourcemap.json
+
+# Wally packages (installed via wally install)
+/Packages/
+/ServerPackages/
+/DevPackages/
+wally.lock

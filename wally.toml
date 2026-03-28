@@ -1,0 +1,12 @@
+[package]
+name = "steve/memory-heist"
+version = "0.1.0"
+registry = "https://github.com/UpliftGames/wally-index"
+realm = "shared"
+
+[server-dependencies]
+ProfileService = "tazmondo/profileservice@1.0.6"
+
+[dependencies]
+
+[dev-dependencies]

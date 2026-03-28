@@ -1,0 +1,103 @@
+--[[
+	Definitions for all 7 weapon types.
+	Each entry is the base-level (no upgrades) definition.
+]]
+
+local WeaponData = {
+	EnergySword = {
+		id = "EnergySword",
+		name = "Energy Sword",
+		description = "Close range melee weapon with fast swing speed. Good for aggressive players.",
+		damage = 25,
+		fireRate = 2.0, -- swings per second
+		range = 8,
+		firingMode = "Melee",
+		magazineSize = 0, -- melee, no ammo
+		reloadTime = 0,
+		spread = 0,
+		projectileSpeed = nil,
+	},
+	PulseBlaster = {
+		id = "PulseBlaster",
+		name = "Pulse Blaster",
+		description = "Medium range energy gun. Simple, reliable, and balanced.",
+		damage = 18,
+		fireRate = 3.0,
+		range = 120,
+		firingMode = "Hitscan",
+		magazineSize = 20,
+		reloadTime = 1.5,
+		spread = 2.0,
+		projectileSpeed = nil,
+	},
+	RailRifle = {
+		id = "RailRifle",
+		name = "Rail Rifle",
+		description = "Slow but powerful long-range weapon. Rewards aim and timing.",
+		damage = 55,
+		fireRate = 0.7,
+		range = 300,
+		firingMode = "Hitscan",
+		magazineSize = 5,
+		reloadTime = 2.5,
+		spread = 0.5,
+		projectileSpeed = nil,
+	},
+	MemorySMG = {
+		id = "MemorySMG",
+		name = "Memory SMG",
+		description = "Fast firing close-medium range weapon. Good for rushing and rooftop fights.",
+		damage = 10,
+		fireRate = 8.0,
+		range = 80,
+		firingMode = "Hitscan",
+		magazineSize = 30,
+		reloadTime = 1.8,
+		spread = 4.0,
+		projectileSpeed = nil,
+	},
+	GlitchShotgun = {
+		id = "GlitchShotgun",
+		name = "Glitch Shotgun",
+		description = "Close range burst damage weapon. Strong indoors and on rooftops.",
+		damage = 8, -- per pellet, 6 pellets = 48 max
+		fireRate = 1.2,
+		range = 30,
+		firingMode = "Hitscan",
+		magazineSize = 6,
+		reloadTime = 2.8,
+		spread = 8.0,
+		projectileSpeed = nil,
+		pelletsPerShot = 6,
+	},
+	PhaseKnife = {
+		id = "PhaseKnife",
+		name = "Phase Knife",
+		description = "Very fast melee assassin weapon. Weak range but fast hit speed.",
+		damage = 15,
+		fireRate = 3.5,
+		range = 6,
+		firingMode = "Melee",
+		magazineSize = 0,
+		reloadTime = 0,
+		spread = 0,
+		projectileSpeed = nil,
+	},
+	ShockLauncher = {
+		id = "ShockLauncher",
+		name = "Shock Launcher",
+		description = "Explosive energy launcher. Slower weapon with area damage.",
+		damage = 40,
+		fireRate = 0.8,
+		range = 150,
+		firingMode = "Projectile",
+		magazineSize = 4,
+		reloadTime = 3.0,
+		spread = 0,
+		projectileSpeed = 100,
+		blastRadius = 15,
+	},
+}
+
+table.freeze(WeaponData)
+return WeaponData
