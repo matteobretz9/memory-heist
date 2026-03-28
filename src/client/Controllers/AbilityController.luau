@@ -29,13 +29,14 @@ local AbilityController = {}
 -- Constants
 ---------------------------------------------------------------------------
 
--- Fixed slot-to-key mapping (slots 1-5)
-local SLOT_KEYCODES: { [Enum.KeyCode]: number } = {
-	[Enum.KeyCode.Q] = 1,
-	[Enum.KeyCode.E] = 2,
-	[Enum.KeyCode.R] = 3,
-	[Enum.KeyCode.F] = 4,
-	[Enum.KeyCode.Z] = 5,
+-- Map KeyCode to the button string used in AbilityData
+local KEYCODE_TO_BUTTON: { [Enum.KeyCode]: string } = {
+	[Enum.KeyCode.Q] = "Q",
+	[Enum.KeyCode.E] = "E",
+	[Enum.KeyCode.R] = "R",
+	[Enum.KeyCode.F] = "F",
+	[Enum.KeyCode.Z] = "Z",
+	[Enum.KeyCode.Space] = "Space",
 }
 
 -- Minimum interval between HUD refreshes to avoid spamming UI updates
@@ -75,8 +76,21 @@ end
 -- Input handling
 ---------------------------------------------------------------------------
 
---- Called on every key press. Maps the key to a slot and, if valid,
---- sends AbilityActivate to the server and starts an optimistic cooldown.
+--- Find the slot index whose ability's button matches the pressed key.
+local function findSlotByButton(button: string): number?
+	for i, slot in abilitySlots do
+		if slot then
+			local def = AbilityData[slot.abilityId]
+			if def and def.button == button then
+				return i
+			end
+		end
+	end
+	return nil
+end
+
+--- Called on every key press. Finds the ability whose button matches the
+--- pressed key, then sends AbilityActivate to the server.
 local function onInputBegan(input: InputObject, gameProcessedEvent: boolean)
 	-- Ignore input consumed by the engine (e.g. chat, text boxes)
 	if gameProcessedEvent then
@@ -88,17 +102,17 @@ local function onInputBegan(input: InputObject, gameProcessedEvent: boolean)
 		return
 	end
 
-	local slotIndex = SLOT_KEYCODES[input.KeyCode]
+	local button = KEYCODE_TO_BUTTON[input.KeyCode]
+	if not button then
+		return
+	end
+
+	local slotIndex = findSlotByButton(button)
 	if not slotIndex then
 		return
 	end
 
 	local slot = abilitySlots[slotIndex]
-
-	-- Slot must be populated
-	if not slot then
-		return
-	end
 
 	-- Must not be on cooldown
 	if slot.cooldownRemaining > 0 then

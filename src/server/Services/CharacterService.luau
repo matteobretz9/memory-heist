@@ -64,13 +64,28 @@ local playerConnections: { [number]: { RBXScriptConnection } } = {}
 -- Weighted random ability selection
 ---------------------------------------------------------------------------
 
+-- Only abilities that have server-side modules can be assigned.
+-- Add ability ids here as their modules are implemented.
+local IMPLEMENTED_ABILITIES = {
+	"Dash", "Fireball", "ShieldBubble", "Invisibility", "Heal", "Teleport",
+}
+
 -- Build a flat list of { abilityId, weight } entries once at startup so we
 -- don't re-compute every spawn.
 local weightedAbilityPool: { { abilityId: string, weight: number } } = {}
 local totalAbilityWeight: number = 0
 
 local function buildAbilityPool()
+	-- Create a lookup set for quick checking
+	local implemented = {}
+	for _, id in IMPLEMENTED_ABILITIES do
+		implemented[id] = true
+	end
+
 	for id, def in AbilityData do
+		if not implemented[id] then
+			continue
+		end
 		local rarityInfo = RarityData[def.rarity]
 		if rarityInfo then
 			local weight = rarityInfo.spawnWeight
@@ -115,6 +130,21 @@ end
 -- State factory helpers
 ---------------------------------------------------------------------------
 
+-- Fixed slot positions by keybind: slot 1=Q, 2=E, 3=R, 4=F, 5=Z
+local BUTTON_TO_SLOT: { [string]: number } = {
+	Q = 1, E = 2, R = 3, F = 4, Z = 5,
+	Space = 1, -- Space-bound abilities (e.g. Double Jump) go in slot 1
+}
+
+-- Get the correct slot index for an ability based on its button field
+local function getSlotForAbility(abilityId: string): number
+	local def = AbilityData[abilityId]
+	if def and BUTTON_TO_SLOT[def.button] then
+		return BUTTON_TO_SLOT[def.button]
+	end
+	return 1 -- fallback
+end
+
 local function createAbilitySlot(abilityId: string): AbilitySlot
 	return {
 		abilityId = abilityId,
@@ -122,6 +152,11 @@ local function createAbilitySlot(abilityId: string): AbilitySlot
 		cooldownRemaining = 0,
 		isLocked = false,
 	}
+end
+
+-- Create a 5-slot array with nil for empty slots
+local function createEmptySlots(): { AbilitySlot? }
+	return { nil, nil, nil, nil, nil }
 end
 
 local function createWeaponState(weaponId: string): WeaponState
@@ -138,15 +173,33 @@ local function createDefaultPlayerState(): PlayerState
 	local weaponId = pickRandomWeapon()
 	local abilityId = pickRandomAbility()
 
+	local slots = createEmptySlots()
+	local slotIndex = getSlotForAbility(abilityId)
+	slots[slotIndex] = createAbilitySlot(abilityId)
+
 	return {
 		alive = true,
-		abilitySlots = { createAbilitySlot(abilityId) },
+		abilitySlots = slots,
 		weapon = createWeaponState(weaponId),
 		overloadTier = 0,
 		kills = 0,
 		deaths = 0,
 		score = 0,
 	}
+end
+
+---------------------------------------------------------------------------
+-- Slot counting (slots are positional, so some may be nil)
+---------------------------------------------------------------------------
+
+local function countAbilities(slots: { AbilitySlot? }): number
+	local count = 0
+	for i = 1, 5 do
+		if slots[i] then
+			count += 1
+		end
+	end
+	return count
 end
 
 ---------------------------------------------------------------------------
@@ -211,7 +264,10 @@ local function onCharacterAdded(player: Player, character: Model)
 
 	state.alive = true
 	state.weapon = createWeaponState(weaponId)
-	state.abilitySlots = { createAbilitySlot(abilityId) }
+	local slots = createEmptySlots()
+	local slotIndex = getSlotForAbility(abilityId)
+	slots[slotIndex] = createAbilitySlot(abilityId)
+	state.abilitySlots = slots
 	state.overloadTier = 0
 
 	-- Notify the client of the loadout
@@ -350,7 +406,7 @@ end
 -- Public mutators
 ---------------------------------------------------------------------------
 
---- Add an ability to the player's loadout. Returns true on success.
+--- Add an ability to the player's loadout in the correct slot. Returns true on success.
 function CharacterService.addAbility(player: Player, abilityId: string): boolean
 	local state = playerStates[player.UserId]
 	if not state then
@@ -364,15 +420,22 @@ function CharacterService.addAbility(player: Player, abilityId: string): boolean
 	end
 
 	-- Enforce slot cap
-	if #state.abilitySlots >= OverloadData.maxSlots then
+	if countAbilities(state.abilitySlots) >= OverloadData.maxSlots then
 		warn("[CharacterService] Player already at max ability slots")
 		return false
 	end
 
-	table.insert(state.abilitySlots, createAbilitySlot(abilityId))
+	-- Place in the correct slot based on the ability's button
+	local slotIndex = getSlotForAbility(abilityId)
+	if state.abilitySlots[slotIndex] then
+		warn("[CharacterService] Slot", slotIndex, "already occupied by", state.abilitySlots[slotIndex].abilityId)
+		return false
+	end
+
+	state.abilitySlots[slotIndex] = createAbilitySlot(abilityId)
 
 	-- Recalculate overload tier
-	state.overloadTier = computeOverloadTier(#state.abilitySlots)
+	state.overloadTier = computeOverloadTier(countAbilities(state.abilitySlots))
 
 	syncAbilitySlots(player)
 	syncOverload(player)
@@ -386,15 +449,20 @@ function CharacterService.removeAbility(player: Player, slotIndex: number): bool
 		return false
 	end
 
-	if slotIndex < 1 or slotIndex > #state.abilitySlots then
+	if slotIndex < 1 or slotIndex > 5 then
 		warn("[CharacterService] Invalid slot index:", slotIndex)
 		return false
 	end
 
-	table.remove(state.abilitySlots, slotIndex)
+	if not state.abilitySlots[slotIndex] then
+		warn("[CharacterService] Slot", slotIndex, "is already empty")
+		return false
+	end
+
+	state.abilitySlots[slotIndex] = nil
 
 	-- Recalculate overload tier
-	state.overloadTier = computeOverloadTier(#state.abilitySlots)
+	state.overloadTier = computeOverloadTier(countAbilities(state.abilitySlots))
 
 	syncAbilitySlots(player)
 	syncOverload(player)
@@ -454,6 +522,17 @@ function CharacterService.init()
 	for _, player in Players:GetPlayers() do
 		task.spawn(onPlayerAdded, player)
 	end
+
+	-- Listen for clients requesting a full state resync (fixes init timing)
+	ServerNetwork.onClientEvent(EventNames.RequestStateSync, function(player: Player)
+		local state = playerStates[player.UserId]
+		if state then
+			syncWeapon(player)
+			syncAbilitySlots(player)
+			syncOverload(player)
+			print("[CharacterService] Resynced state for", player.Name)
+		end
+	end)
 
 	print("[CharacterService] Initialised")
 end

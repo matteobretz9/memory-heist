@@ -34,4 +34,10 @@ local StealChoiceUI = require(script.UI.StealChoice)
 StealChoiceUI.init()
 print("[Client] StealChoiceUI initialized")
 
+-- Request full state resync from server now that all listeners are ready
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local EventNames = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Network"):WaitForChild("EventNames"))
+ClientNetwork.fireServer(EventNames.RequestStateSync)
+print("[Client] Requested state resync")
+
 print("[Client] Memory Heist client started!")

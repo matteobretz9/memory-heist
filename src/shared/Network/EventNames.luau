@@ -47,6 +47,9 @@ local EventNames = {
 	PlayerDataLoaded = "PlayerDataLoaded",
 	CurrencyUpdate = "CurrencyUpdate",
 
+	-- Sync
+	RequestStateSync = "RequestStateSync", -- client -> server: resend my state
+
 	-- Lobby
 	LobbyInfo = "LobbyInfo",
 	MatchmakingStatus = "MatchmakingStatus",

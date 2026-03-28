@@ -4,15 +4,19 @@
 ]]
 
 local ServerNetwork = require(script.Network)
-local PlayerProfile = require(script.Data.PlayerProfile)
 
 -- Phase 0: Initialize networking first (creates RemoteEvents)
 ServerNetwork.init()
 print("[Server] Networking initialized")
 
--- Phase 0: Load player data system
-PlayerProfile.init()
-print("[Server] PlayerProfile initialized")
+-- Phase 0: Load player data system (non-blocking — may fail if ProfileService isn't available)
+local profileOk, PlayerProfile = pcall(require, script.Data.PlayerProfile)
+if profileOk then
+	PlayerProfile.init()
+	print("[Server] PlayerProfile initialized")
+else
+	warn("[Server] PlayerProfile failed to load (ProfileService not available). Persistence disabled.")
+end
 
 -- Phase 1: Core gameplay services
 local DamageService = require(script.Services.DamageService)

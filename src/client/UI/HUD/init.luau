@@ -14,6 +14,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local AbilityData = require(Shared:WaitForChild("Data"):WaitForChild("AbilityData"))
 local RarityData = require(Shared:WaitForChild("Data"):WaitForChild("RarityData"))
+local WeaponData = require(Shared:WaitForChild("Data"):WaitForChild("WeaponData"))
 local EventNames = require(Shared:WaitForChild("Network"):WaitForChild("EventNames"))
 local ClientNetwork = require(script.Parent.Parent:WaitForChild("Network"))
 
@@ -444,6 +445,13 @@ function HUD.init()
 	ClientNetwork.onServerEvent(EventNames.AbilitySlotUpdate, function(slots)
 		HUD.updateAbilitySlots(slots)
 	end)
+
+	ClientNetwork.onServerEvent(EventNames.WeaponEquip, function(weaponState)
+		local def = WeaponData[weaponState.weaponId]
+		local weaponName = if def then def.name else weaponState.weaponId
+		local maxAmmo = if def then def.magazineSize else 0
+		HUD.updateWeaponInfo(weaponName, weaponState.currentAmmo, maxAmmo, weaponState.isReloading)
+	end)
 end
 
 --[[
@@ -484,9 +492,12 @@ function HUD.updateAbilitySlots(slots: { any })
 		end
 
 		if slotData == nil then
-			-- Empty slot
+			-- Empty slot — show the fixed keybind for this position
 			nameLabel.Text = "Empty"
 			nameLabel.TextColor3 = COLORS.dimText
+			if keybindLabel then
+				keybindLabel.Text = SLOT_KEYBINDS[i]
+			end
 			stroke.Color = COLORS.slotEmpty
 			cooldownOverlay.Size = UDim2.new(1, 0, 0, 0)
 			if frame then
