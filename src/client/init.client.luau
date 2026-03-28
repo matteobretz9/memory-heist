@@ -26,4 +26,12 @@ local AbilityController = require(script.Controllers.AbilityController)
 AbilityController.init()
 print("[Client] AbilityController initialized")
 
+local OverloadController = require(script.Controllers.OverloadController)
+OverloadController.init()
+print("[Client] OverloadController initialized")
+
+local StealChoiceUI = require(script.UI.StealChoice)
+StealChoiceUI.init()
+print("[Client] StealChoiceUI initialized")
+
 print("[Client] Memory Heist client started!")

@@ -31,4 +31,16 @@ local AbilityService = require(script.Services.AbilityService)
 AbilityService.init()
 print("[Server] AbilityService initialized")
 
+local OverloadService = require(script.Services.OverloadService)
+OverloadService.init()
+print("[Server] OverloadService initialized")
+
+local UpgradeService = require(script.Services.UpgradeService)
+UpgradeService.init()
+print("[Server] UpgradeService initialized")
+
+local StealService = require(script.Services.StealService)
+StealService.init()
+print("[Server] StealService initialized")
+
 print("[Server] Memory Heist server started!")
