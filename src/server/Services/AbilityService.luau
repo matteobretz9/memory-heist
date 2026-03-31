@@ -61,7 +61,7 @@ end
 
 --- Attempt to activate an ability for a player at the given slot index.
 --- Returns true if activation succeeded, false otherwise.
-function AbilityService.activateAbility(player: Player, slotIndex: number): boolean
+function AbilityService.activateAbility(player: Player, slotIndex: number, aimData: any?): boolean
 	-- 1. Player must be alive
 	if not CharacterService.isAlive(player) then
 		return false
@@ -110,10 +110,24 @@ function AbilityService.activateAbility(player: Player, slotIndex: number): bool
 		return false
 	end
 
-	local execOk, execErr = pcall(abilityModule.execute, player, abilityDef)
+	local execOk, execErr = pcall(abilityModule.execute, player, abilityDef, aimData)
 	if not execOk then
 		warn("[AbilityService] Error executing ability '" .. slot.abilityId .. "':", execErr)
 		return false
+	end
+
+	-- 7b. Broadcast VFX event to all clients
+	local character = player.Character
+	if character then
+		local rootPart = character:FindFirstChild("HumanoidRootPart")
+		if rootPart then
+			ServerNetwork.fireAllClients(EventNames.AbilityVFX, {
+				abilityId = slot.abilityId,
+				playerName = player.Name,
+				position = rootPart.Position,
+				direction = rootPart.CFrame.LookVector,
+			})
+		end
 	end
 
 	-- 8. Set cooldown
@@ -121,6 +135,12 @@ function AbilityService.activateAbility(player: Player, slotIndex: number): bool
 
 	-- 9. Sync cooldown to client immediately
 	ServerNetwork.fireClient(EventNames.AbilityCooldownUpdate, player, slotIndex, slot.cooldownRemaining)
+
+	-- 10. Track ability usage for challenges
+	local ok, ChallengeService = pcall(require, script.Parent.ChallengeService)
+	if ok and ChallengeService.incrementStat then
+		ChallengeService.incrementStat(player, "abilitiesUsed", 1)
+	end
 
 	return true
 end
@@ -168,13 +188,13 @@ end
 -- Client event handler
 ---------------------------------------------------------------------------
 
-local function onAbilityActivateRequest(player: Player, slotIndex: any)
+local function onAbilityActivateRequest(player: Player, slotIndex: any, aimData: any?)
 	-- Basic type validation on the wire data
 	if type(slotIndex) ~= "number" then
 		return
 	end
 
-	AbilityService.activateAbility(player, slotIndex)
+	AbilityService.activateAbility(player, slotIndex, aimData)
 end
 
 ---------------------------------------------------------------------------

@@ -20,6 +20,7 @@ local EventNames = {
 	AbilityCooldownUpdate = "AbilityCooldownUpdate",
 	AbilitySlotUpdate = "AbilitySlotUpdate",
 	AbilityLocked = "AbilityLocked", -- overload disabled an ability
+	AbilityVFX = "AbilityVFX", -- server -> all clients: play ability visual effect
 
 	-- Damage
 	DamageDealt = "DamageDealt",
@@ -42,6 +43,7 @@ local EventNames = {
 	GameStateChanged = "GameStateChanged",
 	RoundTimerSync = "RoundTimerSync",
 	ScoreUpdate = "ScoreUpdate",
+	RoundResults = "RoundResults",
 
 	-- Player Data
 	PlayerDataLoaded = "PlayerDataLoaded",
@@ -53,6 +55,35 @@ local EventNames = {
 	-- Lobby
 	LobbyInfo = "LobbyInfo",
 	MatchmakingStatus = "MatchmakingStatus",
+
+	-- Battle Pass
+	BattlePassUpdate = "BattlePassUpdate",
+	BattlePassClaimRequest = "BattlePassClaimRequest",
+	BattlePassRewardClaimed = "BattlePassRewardClaimed",
+
+	-- Challenges
+	ChallengeSync = "ChallengeSync",
+	ChallengeProgressUpdate = "ChallengeProgressUpdate",
+	ChallengeCompleted = "ChallengeCompleted",
+	ChallengeClaimRequest = "ChallengeClaimRequest",
+	ChallengeRewardClaimed = "ChallengeRewardClaimed",
+
+	-- Game Modes
+	ModeChanged = "ModeChanged",
+	TeamAssigned = "TeamAssigned",
+	DuelChallenge = "DuelChallenge",
+	DuelAccept = "DuelAccept",
+
+	-- Glitch Zones
+	GlitchZoneEnter = "GlitchZoneEnter",
+	GlitchZoneExit = "GlitchZoneExit",
+
+	-- Cosmetics Shop
+	CosmeticPurchaseRequest = "CosmeticPurchaseRequest",
+	CosmeticEquipRequest = "CosmeticEquipRequest",
+	CosmeticPurchased = "CosmeticPurchased",
+	CosmeticEquipped = "CosmeticEquipped",
+	ShopDataSync = "ShopDataSync",
 }
 
 table.freeze(EventNames)

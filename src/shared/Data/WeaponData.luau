@@ -1,5 +1,5 @@
 --[[
-	Definitions for all 7 weapon types.
+	Definitions for all 8 weapon types.
 	Each entry is the base-level (no upgrades) definition.
 ]]
 
@@ -29,6 +29,7 @@ local WeaponData = {
 		reloadTime = 1.5,
 		spread = 2.0,
 		projectileSpeed = nil,
+		autoFire = true,
 	},
 	RailRifle = {
 		id = "RailRifle",
@@ -55,6 +56,7 @@ local WeaponData = {
 		reloadTime = 1.8,
 		spread = 4.0,
 		projectileSpeed = nil,
+		autoFire = true,
 	},
 	GlitchShotgun = {
 		id = "GlitchShotgun",
@@ -96,6 +98,20 @@ local WeaponData = {
 		spread = 0,
 		projectileSpeed = 100,
 		blastRadius = 15,
+	},
+	Sniper = {
+		id = "Sniper",
+		name = "Sniper",
+		description = "Long range precision weapon. Body shots deal heavy damage, headshots are lethal.",
+		damage = 70,
+		fireRate = 0.5,
+		range = 500,
+		firingMode = "Hitscan",
+		magazineSize = 5,
+		reloadTime = 3.0,
+		spread = 0.2,
+		projectileSpeed = nil,
+		headshotMultiplier = 2.86,
 	},
 }
 

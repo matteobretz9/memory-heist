@@ -27,7 +27,6 @@ local PROFILE_TEMPLATE = {
 	equippedCosmetics = {
 		-- slot name -> cosmetic id
 		weaponSkin = "",
-		trailEffect = "",
 		killEffect = "",
 		playerTitle = "",
 	},
@@ -36,6 +35,15 @@ local PROFILE_TEMPLATE = {
 	battlePassTier = 0,
 	battlePassXP = 0,
 	battlePassPremium = false,
+	battlePassClaimedTiers = {},
+
+	-- Challenges (saved so progress survives reconnects)
+	challenges = {
+		dailies = {},
+		weeklies = {},
+		lastDailyReset = 0,
+		lastWeeklyReset = 0,
+	},
 
 	-- Settings (synced to server for persistence)
 	settings = {
@@ -130,6 +138,23 @@ function PlayerProfile.addCredits(player: Player, amount: number)
 	if data then
 		data.credits += amount
 	end
+end
+
+-- Set a top-level key in the profile data
+function PlayerProfile.setField(player: Player, key: string, value: any)
+	local data = PlayerProfile.getData(player)
+	if data then
+		data[key] = value
+	end
+end
+
+-- Get a top-level key from the profile data
+function PlayerProfile.getField(player: Player, key: string): any
+	local data = PlayerProfile.getData(player)
+	if data then
+		return data[key]
+	end
+	return nil
 end
 
 return PlayerProfile

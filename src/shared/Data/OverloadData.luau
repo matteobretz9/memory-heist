@@ -39,7 +39,7 @@ local OverloadData = {
 local OVERLOAD_CHECK_INTERVAL = 5.0
 
 -- Max number of ability slots a player can hold
-local MAX_ABILITY_SLOTS = 5
+local MAX_ABILITY_SLOTS = 4
 
 -- Number of abilities before overload starts
 local OVERLOAD_THRESHOLD = 3

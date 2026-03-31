@@ -24,7 +24,7 @@ export type AbilityDef = {
 }
 
 export type WeaponType = "EnergySword" | "PulseBlaster" | "RailRifle"
-	| "MemorySMG" | "GlitchShotgun" | "PhaseKnife" | "ShockLauncher"
+	| "MemorySMG" | "GlitchShotgun" | "PhaseKnife" | "ShockLauncher" | "Sniper"
 
 export type FiringMode = "Hitscan" | "Projectile" | "Melee"
 

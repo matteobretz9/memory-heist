@@ -58,14 +58,17 @@ local function buildRayParams(attackerChar: Model): RaycastParams
 end
 
 --[[
-	Resolve a RaycastResult into the Player who was hit (if any).
+	Resolve a RaycastResult into the Player who was hit (if any),
+	and whether the hit part was the head.
 ]]
-local function getPlayerFromHit(hit: Instance): Player?
+local function getPlayerFromHit(hit: Instance): (Player?, boolean)
 	local char = hit:FindFirstAncestorOfClass("Model")
 	if char then
-		return Players:GetPlayerFromCharacter(char)
+		local player = Players:GetPlayerFromCharacter(char)
+		local isHeadshot = hit.Name == "Head"
+		return player, isHeadshot
 	end
-	return nil
+	return nil, false
 end
 
 --[[
@@ -94,14 +97,14 @@ end
 
 --[[
 	Hitscan: single ray (or multiple for shotguns).
-	Returns a list of { player: Player, position: Vector3 } for confirmed hits.
+	Returns a list of { player: Player, position: Vector3, isHeadshot: boolean } for confirmed hits.
 ]]
 local function hitscanDetect(
 	attacker: Player,
 	origin: Vector3,
 	direction: Vector3,
 	weaponDef: any
-): { { player: Player, position: Vector3 } }
+): { { player: Player, position: Vector3, isHeadshot: boolean } }
 	local attackerChar = attacker.Character
 	if not attackerChar then
 		return {}
@@ -112,21 +115,21 @@ local function hitscanDetect(
 	local spread = weaponDef.spread
 	local pellets = weaponDef.pelletsPerShot or 1
 
-	local hits: { { player: Player, position: Vector3 } } = {}
+	local hits: { { player: Player, position: Vector3, isHeadshot: boolean } } = {}
 	local alreadyHit: { [Player]: boolean } = {} -- one hit per target per shot for shotguns
 
 	for _ = 1, pellets do
 		local dir = applySpread(direction, spread)
 		local result = Workspace:Raycast(origin, dir * range, params)
 		if result then
-			local hitPlayer = getPlayerFromHit(result.Instance)
+			local hitPlayer, isHeadshot = getPlayerFromHit(result.Instance)
 			if hitPlayer and hitPlayer ~= attacker and not alreadyHit[hitPlayer] then
 				-- For shotguns each pellet damages independently, so we
 				-- do NOT mark alreadyHit when pelletsPerShot > 1.
 				if pellets == 1 then
 					alreadyHit[hitPlayer] = true
 				end
-				table.insert(hits, { player = hitPlayer, position = result.Position })
+				table.insert(hits, { player = hitPlayer, position = result.Position, isHeadshot = isHeadshot })
 			end
 		end
 	end
@@ -136,11 +139,12 @@ end
 
 --[[
 	Melee: find characters in front of the attacker within range.
+	Also detects backstabs by comparing attacker and target facing directions.
 ]]
 local function meleeDetect(
 	attacker: Player,
 	weaponDef: any
-): { { player: Player, position: Vector3 } }
+): { { player: Player, position: Vector3, isBackstab: boolean } }
 	local attackerChar = attacker.Character
 	if not attackerChar then
 		return {}
@@ -156,7 +160,7 @@ local function meleeDetect(
 	local range = weaponDef.range
 	local rangeSq = range * range
 
-	local hits: { { player: Player, position: Vector3 } } = {}
+	local hits: { { player: Player, position: Vector3, isBackstab: boolean } } = {}
 
 	for _, otherPlayer in Players:GetPlayers() do
 		if otherPlayer == attacker then
@@ -184,7 +188,13 @@ local function meleeDetect(
 		-- Dot product check: target must be roughly in front of the attacker
 		local dot = forward:Dot(toTarget.Unit)
 		if dot > 0.4 then -- ~66 degree half-cone
-			table.insert(hits, { player = otherPlayer, position = otherRoot.Position })
+			-- Backstab check: if both characters face the same direction
+			-- (dot product of forward vectors > 0.5), attacker is behind the target
+			local targetForward = otherRoot.CFrame.LookVector
+			local facingDot = forward:Dot(targetForward)
+			local isBackstab = facingDot > 0.5
+
+			table.insert(hits, { player = otherPlayer, position = otherRoot.Position, isBackstab = isBackstab })
 		end
 	end
 
@@ -200,7 +210,7 @@ local function projectileDetect(
 	origin: Vector3,
 	direction: Vector3,
 	weaponDef: any
-): { { player: Player, position: Vector3 } }
+): { { player: Player, position: Vector3, isHeadshot: boolean } }
 	-- Reuse hitscan logic with full range (no spread for launchers usually)
 	return hitscanDetect(attacker, origin, direction, weaponDef)
 end
@@ -265,25 +275,56 @@ local function handleWeaponFire(player: Player, data: { origin: Vector3, directi
 	direction = direction.Unit
 
 	-- Perform hit detection based on firing mode
-	local hits: { { player: Player, position: Vector3 } } = {}
-
 	if weaponDef.firingMode == "Hitscan" then
-		hits = hitscanDetect(player, data.origin, direction, weaponDef)
+		local hits = hitscanDetect(player, data.origin, direction, weaponDef)
+		for _, hit in hits do
+			local damage = weaponDef.damage
+			if hit.isHeadshot then
+				local multiplier = weaponDef.headshotMultiplier or 2.0
+				damage = damage * multiplier
+			end
+
+			DamageService.processDamage(player, hit.player, damage, weaponDef.id)
+
+			ServerNetwork.fireClient(EventNames.WeaponHitConfirm, player, {
+				targetName = hit.player.Name,
+				position = hit.position,
+				isHeadshot = hit.isHeadshot,
+			})
+		end
 	elseif weaponDef.firingMode == "Melee" then
-		hits = meleeDetect(player, weaponDef)
+		local hits = meleeDetect(player, weaponDef)
+		for _, hit in hits do
+			local damage = weaponDef.damage
+			if hit.isBackstab then
+				damage = damage * 2.0
+			end
+
+			DamageService.processDamage(player, hit.player, damage, weaponDef.id)
+
+			ServerNetwork.fireClient(EventNames.WeaponHitConfirm, player, {
+				targetName = hit.player.Name,
+				position = hit.position,
+				isBackstab = hit.isBackstab,
+			})
+		end
 	elseif weaponDef.firingMode == "Projectile" then
-		hits = projectileDetect(player, data.origin, direction, weaponDef)
-	end
+		local hits = projectileDetect(player, data.origin, direction, weaponDef)
+		for _, hit in hits do
+			local damage = weaponDef.damage
+			if hit.isHeadshot then
+				local multiplier = weaponDef.headshotMultiplier or 2.0
+				damage = damage * multiplier
+			end
 
-	-- Process confirmed hits
-	for _, hit in hits do
-		DamageService.processDamage(player, hit.player, weaponDef.damage, weaponDef.id)
+			DamageService.processDamage(player, hit.player, damage, weaponDef.id)
 
-		-- Notify the shooter that their shot connected
-		ServerNetwork.fireClient(EventNames.WeaponHitConfirm, player, {
-			targetName = hit.player.Name,
-			position = hit.position,
-		})
+			ServerNetwork.fireClient(EventNames.WeaponHitConfirm, player, {
+				targetName = hit.player.Name,
+				position = hit.position,
+				isHeadshot = hit.isHeadshot,
+			})
+		end
 	end
 end
 

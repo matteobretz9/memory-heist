@@ -464,6 +464,12 @@ function StealService._processStealAbility(
 			message = "Stolen: " .. (abilityDef.name or abilityId),
 		})
 		-- AbilitySlotUpdate is already fired by CharacterService.addAbility
+
+		-- Track steal for challenges
+		local okCh, ChallengeService = pcall(require, script.Parent.ChallengeService)
+		if okCh and ChallengeService.incrementStat then
+			ChallengeService.incrementStat(player, "steals", 1)
+		end
 	end
 end
 

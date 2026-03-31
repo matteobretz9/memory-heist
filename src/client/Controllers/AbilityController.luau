@@ -33,7 +33,6 @@ local AbilityController = {}
 local KEYCODE_TO_BUTTON: { [Enum.KeyCode]: string } = {
 	[Enum.KeyCode.Q] = "Q",
 	[Enum.KeyCode.E] = "E",
-	[Enum.KeyCode.R] = "R",
 	[Enum.KeyCode.F] = "F",
 	[Enum.KeyCode.Z] = "Z",
 	[Enum.KeyCode.Space] = "Space",
@@ -92,13 +91,14 @@ end
 --- Called on every key press. Finds the ability whose button matches the
 --- pressed key, then sends AbilityActivate to the server.
 local function onInputBegan(input: InputObject, gameProcessedEvent: boolean)
-	-- Ignore input consumed by the engine (e.g. chat, text boxes)
-	if gameProcessedEvent then
+	-- Only care about keyboard input
+	if input.UserInputType ~= Enum.UserInputType.Keyboard then
 		return
 	end
 
-	-- Only care about keyboard input
-	if input.UserInputType ~= Enum.UserInputType.Keyboard then
+	-- Ignore input consumed by the engine (e.g. chat, text boxes),
+	-- EXCEPT for Space which Roblox always marks as processed (jump).
+	if gameProcessedEvent and input.KeyCode ~= Enum.KeyCode.Space then
 		return
 	end
 
@@ -124,8 +124,16 @@ local function onInputBegan(input: InputObject, gameProcessedEvent: boolean)
 		return
 	end
 
-	-- All checks passed — fire the event to the server
-	ClientNetwork.fireServer(EventNames.AbilityActivate, slotIndex)
+	-- All checks passed — fire the event to the server with aim data
+	local cam = workspace.CurrentCamera
+	local aimData = nil
+	if cam then
+		aimData = {
+			origin = cam.CFrame.Position,
+			direction = cam.CFrame.LookVector,
+		}
+	end
+	ClientNetwork.fireServer(EventNames.AbilityActivate, slotIndex, aimData)
 
 	-- Optimistic cooldown prediction: set local cooldown immediately so the
 	-- HUD reacts without waiting for the server round-trip. The server will

@@ -40,6 +40,11 @@ local WeaponUpgradeData = {
 		{ tier = 2, damageMultiplier = 1.30, fireRateMultiplier = 1.10, special = "StickyShot" },
 		{ tier = 3, damageMultiplier = 1.45, fireRateMultiplier = 1.15, special = "EMPBlast" },
 	},
+	Sniper = {
+		{ tier = 1, damageMultiplier = 1.15, fireRateMultiplier = 1.00, special = "SteadyAim" },
+		{ tier = 2, damageMultiplier = 1.25, fireRateMultiplier = 1.10, special = "ArmorPiercing" },
+		{ tier = 3, damageMultiplier = 1.40, fireRateMultiplier = 1.15, special = "ExplosiveRounds" },
+	},
 }
 
 table.freeze(WeaponUpgradeData)

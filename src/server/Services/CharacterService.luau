@@ -67,7 +67,16 @@ local playerConnections: { [number]: { RBXScriptConnection } } = {}
 -- Only abilities that have server-side modules can be assigned.
 -- Add ability ids here as their modules are implemented.
 local IMPLEMENTED_ABILITIES = {
-	"Dash", "Fireball", "ShieldBubble", "Invisibility", "Heal", "Teleport",
+	-- Common
+	"Dash", "DoubleJump", "SpeedBoost", "SuperPunch", "Heal", "SpinAttack", "TrapDrop", "SmokeCloud",
+	-- Rare
+	"GroundSlam", "Shockwave", "FreezeBlast", "Fireball", "ShieldBubble", "Hover", "KnockbackBlast", "RocketJump",
+	-- Epic
+	"Invisibility", "Teleport", "LightningStrike", "LaserBeam", "MagnetPull", "PoisonCloud", "IceWall", "EnergyWave",
+	-- Legendary
+	"TimeSlow", "CloneSpawn", "TornadoSpin", "HologramDecoy", "EMPBlast", "GravityPull",
+	-- Mythic
+	"DroneStrike", "NeonSlash", "CyberCloak", "PulseDash", "PlasmaCannon", "DataHack", "OverloadMode", "RageMode",
 }
 
 -- Build a flat list of { abilityId, weight } entries once at startup so we
@@ -130,9 +139,9 @@ end
 -- State factory helpers
 ---------------------------------------------------------------------------
 
--- Fixed slot positions by keybind: slot 1=Q, 2=E, 3=R, 4=F, 5=Z
+-- Fixed slot positions by keybind: slot 1=Q, 2=E, 3=F, 4=Z
 local BUTTON_TO_SLOT: { [string]: number } = {
-	Q = 1, E = 2, R = 3, F = 4, Z = 5,
+	Q = 1, E = 2, F = 3, Z = 4,
 	Space = 1, -- Space-bound abilities (e.g. Double Jump) go in slot 1
 }
 
@@ -154,9 +163,9 @@ local function createAbilitySlot(abilityId: string): AbilitySlot
 	}
 end
 
--- Create a 5-slot array with nil for empty slots
+-- Create a 4-slot array with nil for empty slots
 local function createEmptySlots(): { AbilitySlot? }
-	return { nil, nil, nil, nil, nil }
+	return { nil, nil, nil, nil }
 end
 
 local function createWeaponState(weaponId: string): WeaponState
@@ -194,7 +203,7 @@ end
 
 local function countAbilities(slots: { AbilitySlot? }): number
 	local count = 0
-	for i = 1, 5 do
+	for i = 1, 4 do
 		if slots[i] then
 			count += 1
 		end
@@ -276,8 +285,12 @@ local function onCharacterAdded(player: Player, character: Model)
 	syncOverload(player)
 	ServerNetwork.fireClient(EventNames.CharacterSpawned, player)
 
-	-- Listen for death
+	-- Set player health to 200
 	local humanoid = character:WaitForChild("Humanoid") :: Humanoid
+	humanoid.MaxHealth = 200
+	humanoid.Health = 200
+
+	-- Listen for death
 	local diedConn: RBXScriptConnection
 	diedConn = humanoid.Died:Connect(function()
 		diedConn:Disconnect()
@@ -326,6 +339,20 @@ function onCharacterDied(player: Player, humanoid: Humanoid)
 		end
 	end
 
+	-- Record the kill in GameStateService for FFA scoring
+	if killerPlayer and killerPlayer ~= player then
+		local GameStateService = require(script.Parent.GameStateService)
+		GameStateService.recordKill(killerPlayer)
+
+		-- Phase 5: Award credits, XP, and challenge progress for the kill
+		local CurrencyService = require(script.Parent.CurrencyService)
+		CurrencyService.awardKillCredits(killerPlayer)
+		local BattlePassService = require(script.Parent.BattlePassService)
+		BattlePassService.awardKillXP(killerPlayer)
+		local ChallengeService = require(script.Parent.ChallengeService)
+		ChallengeService.incrementStat(killerPlayer, "kills", 1)
+	end
+
 	-- Broadcast the kill event to all clients
 	ServerNetwork.fireAllClients(EventNames.KillOccurred, killerName, player.Name)
 
@@ -362,8 +389,11 @@ local function onPlayerAdded(player: Player)
 	table.insert(playerConnections[player.UserId], charConn)
 
 	-- If a character already exists (studio quick-start), handle it now
+	-- Otherwise spawn them manually since CharacterAutoLoads is off
 	if player.Character then
 		onCharacterAdded(player, player.Character)
+	else
+		player:LoadCharacter()
 	end
 end
 
@@ -449,7 +479,7 @@ function CharacterService.removeAbility(player: Player, slotIndex: number): bool
 		return false
 	end
 
-	if slotIndex < 1 or slotIndex > 5 then
+	if slotIndex < 1 or slotIndex > 4 then
 		warn("[CharacterService] Invalid slot index:", slotIndex)
 		return false
 	end
@@ -510,6 +540,9 @@ end
 ---------------------------------------------------------------------------
 
 function CharacterService.init()
+	-- Disable Roblox auto-respawn so we control respawn timing ourselves
+	Players.CharacterAutoLoads = false
+
 	-- Build lookup tables used for random selection
 	buildAbilityPool()
 	buildWeaponList()

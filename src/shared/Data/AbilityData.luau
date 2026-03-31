@@ -52,7 +52,7 @@ local AbilityData = {
 		damage = 0,
 		cooldown = 20,
 		rarity = "Common",
-		button = "R",
+		button = "F",
 		useType = "Support",
 	},
 	SpinAttack = {
@@ -72,7 +72,7 @@ local AbilityData = {
 		damage = 12,
 		cooldown = 10,
 		rarity = "Common",
-		button = "R",
+		button = "F",
 		useType = "Control",
 	},
 	SmokeCloud = {
@@ -104,7 +104,7 @@ local AbilityData = {
 		damage = 18,
 		cooldown = 9,
 		rarity = "Rare",
-		button = "Q",
+		button = "E",
 		useType = "Attack/Control",
 	},
 	FreezeBlast = {
@@ -114,7 +114,7 @@ local AbilityData = {
 		damage = 15,
 		cooldown = 11,
 		rarity = "Rare",
-		button = "R",
+		button = "E",
 		useType = "Control/Attack",
 	},
 	Fireball = {
@@ -196,7 +196,7 @@ local AbilityData = {
 		damage = 28,
 		cooldown = 14,
 		rarity = "Epic",
-		button = "R",
+		button = "E",
 		useType = "Attack/AOE",
 	},
 	LaserBeam = {
@@ -226,7 +226,7 @@ local AbilityData = {
 		damage = 20,
 		cooldown = 15,
 		rarity = "Epic",
-		button = "R",
+		button = "F",
 		useType = "Area Control",
 	},
 	IceWall = {
@@ -246,7 +246,7 @@ local AbilityData = {
 		damage = 24,
 		cooldown = 11,
 		rarity = "Epic",
-		button = "Q",
+		button = "E",
 		useType = "Attack",
 	},
 
@@ -268,7 +268,7 @@ local AbilityData = {
 		damage = 6,
 		cooldown = 22,
 		rarity = "Legendary",
-		button = "R",
+		button = "F",
 		useType = "Trick",
 	},
 	TornadoSpin = {
@@ -288,7 +288,7 @@ local AbilityData = {
 		damage = 0,
 		cooldown = 16,
 		rarity = "Legendary",
-		button = "R",
+		button = "F",
 		useType = "Trick",
 	},
 	EMPBlast = {
@@ -320,7 +320,7 @@ local AbilityData = {
 		damage = 32,
 		cooldown = 22,
 		rarity = "Mythic",
-		button = "R",
+		button = "E",
 		useType = "Summon/Attack",
 	},
 	NeonSlash = {
@@ -360,7 +360,7 @@ local AbilityData = {
 		damage = 40,
 		cooldown = 20,
 		rarity = "Mythic",
-		button = "R",
+		button = "E",
 		useType = "Heavy Projectile",
 	},
 	DataHack = {

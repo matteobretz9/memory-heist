@@ -17,6 +17,11 @@ local EventNames = require(Shared.Network.EventNames)
 local ClientNetwork = require(script.Parent.Parent.Network)
 
 ---------------------------------------------------------------------------
+-- Constants
+---------------------------------------------------------------------------
+local SPRINT_SPEED = 24 -- Always sprint when moving (default WalkSpeed is 16)
+
+---------------------------------------------------------------------------
 -- Module table
 ---------------------------------------------------------------------------
 local CharacterController = {}
@@ -42,11 +47,14 @@ local function onLocalCharacterAdded(character: Model)
 		return
 	end
 
+	-- Auto-sprint: always run at sprint speed when moving
+	humanoid.WalkSpeed = SPRINT_SPEED
+
 	-- Use default Roblox third-person camera (Classic). This can be swapped
 	-- later for a custom camera controller without touching this module.
 	localPlayer.CameraMode = Enum.CameraMode.Classic
 	localPlayer.CameraMaxZoomDistance = 40
-	localPlayer.CameraMinZoomDistance = 5
+	localPlayer.CameraMinZoomDistance = 0.5
 
 	print("[CharacterController] Local character spawned")
 end
